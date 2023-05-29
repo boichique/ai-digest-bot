@@ -3,6 +3,8 @@ version: '3'
 services:
   db:
     image: postgres:15
+    volumes:
+      - db_data:/var/lib/postgres/data
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -39,3 +41,6 @@ services:
       TG_BOT_TOKEN: ${TG_BOT_TOKEN}
     depends_on:
       - server
+
+volumes:
+  db_data:

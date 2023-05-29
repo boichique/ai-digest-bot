@@ -9,7 +9,6 @@ import (
 
 	"digest_bot/internal/config"
 	"digest_bot/internal/validation"
-
 	"github.com/go-resty/resty/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )

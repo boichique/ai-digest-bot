@@ -11,8 +11,7 @@ import (
 	"time"
 
 	"digest_bot_database/internal/config"
-	"digest_bot_database/internal/modules/users"
-
+	"digest_bot_database/internal/modules/sources"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 )
@@ -31,11 +30,11 @@ func main() {
 	db, err := getDB(context.Background(), cfg.DBUrl)
 	failOnError(err, "connect to database")
 
-	usersModule := users.NewModule(db)
+	sourcesModule := sources.NewModule(db)
 
 	api := e.Group("/api")
-	api.GET("/:userID", usersModule.Handler.GetSourcesByID)
-	api.PUT("/:userID", usersModule.Handler.CreateSource)
+	api.GET("/:userID", sourcesModule.Handler.GetSourcesByID)
+	api.PUT("/:userID", sourcesModule.Handler.CreateSource)
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)
