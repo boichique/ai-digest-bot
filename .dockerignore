@@ -1,0 +1,6 @@
+.gitignore
+
+tern
+
+**/Dockerfile
+**/docker-compose.yaml

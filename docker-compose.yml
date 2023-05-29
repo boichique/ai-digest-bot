@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+
+  migrator:
+    build: ./Database/internal/tern
+    command:
+      - migrate
+      - --conn-string
+      - postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}
+      - --migrations
+      - /migrations
+    depends_on:
+      - db
+
+  server:
+    build: ./Database
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DB_URL: postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}
+      PORT: 8000
+    depends_on:
+      - migrator
+
+  bot:
+    build: ./bot
+    environment:
+      TG_ACCESS_TOKEN: ${TG_ACCESS_TOKEN}
+    depends_on:
+      - server
