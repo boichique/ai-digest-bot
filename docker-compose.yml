@@ -37,6 +37,6 @@ services:
     build: ./bot
     command:
       - t
-      - ${TG_ACCESS_TOKEN}
+      - ${TG_BOT_TOKEN}
     depends_on:
       - server

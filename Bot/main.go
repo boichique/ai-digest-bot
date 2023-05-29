@@ -1,13 +1,16 @@
 package main
 
 import (
+	"digest_bot_database/internal/config"
 	"fmt"
 	"log"
+	"net/http"
+	"strconv"
 	"strings"
 
-	"digest_bot/internal/config"
 	"digest_bot/internal/validation"
 
+	"github.com/go-resty/resty/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -54,6 +57,12 @@ func main() {
 				break
 			}
 
+			err = createSource(strconv.Itoa(int(update.Message.Chat.ID)), source)
+			if err != nil {
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
+				break
+			}
+
 			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Source %q added", source)))
 
 		// вывод дайджеста
@@ -68,4 +77,22 @@ func failOnError(err error, message string) {
 	if err != nil {
 		log.Fatalf("%s: %s", message, err)
 	}
+}
+
+func createSource(userID string, source string) error {
+	client := resty.New()
+	resp, err := client.R().
+		SetBody(map[string]string{
+			"source": source,
+		}).
+		Put(fmt.Sprintf("http://localhost:8000/api/%s", userID))
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode())
+	}
+
+	return nil
 }
