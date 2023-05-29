@@ -11,4 +11,4 @@ FROM alpine:3.14 AS final
 
 COPY --from=builder /build/server /bin/server
 
-ENTRYPOINT ["/bin/database"]
+ENTRYPOINT ["/bin/server"]

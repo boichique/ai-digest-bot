@@ -1,24 +1,18 @@
 package main
 
 import (
-	"digest_bot_database/internal/config"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"digest_bot/internal/config"
 	"digest_bot/internal/validation"
 
 	"github.com/go-resty/resty/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
-
-const (
-	youtubeRe = `^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$`
-)
-
-var telegramBotToken string
 
 func main() {
 	cfg, err := config.NewConfig()
@@ -85,7 +79,7 @@ func createSource(userID string, source string) error {
 		SetBody(map[string]string{
 			"source": source,
 		}).
-		Put(fmt.Sprintf("http://localhost:8000/api/%s", userID))
+		Put(fmt.Sprintf("http://server:8000/api/%s", userID))
 	if err != nil {
 		return err
 	}

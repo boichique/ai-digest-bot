@@ -12,7 +12,7 @@ services:
       - "5432:5432"
 
   migrator:
-    build: ./Database/internal/tern
+    build: ./Database/tern
     command:
       - migrate
       - --conn-string
@@ -23,7 +23,7 @@ services:
       - db
 
   server:
-    build: ./Database
+    build: Database
     restart: always
     ports:
       - "8000:8000"
@@ -34,9 +34,8 @@ services:
       - migrator
 
   bot:
-    build: ./bot
-    command:
-      - t
-      - ${TG_BOT_TOKEN}
+    build: ./Bot
+    environment:
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
     depends_on:
       - server

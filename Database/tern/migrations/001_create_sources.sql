@@ -1,8 +1,8 @@
 CREATE TABLE 
 sources (
-  id INT,
+  userid INT,
   source VARCHAR(255) NOT NULL,
-  PRIMARY KEY (userID, source)
+  PRIMARY KEY (userid, source)
 );
 
 ---- create above / drop below ----

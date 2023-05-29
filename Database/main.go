@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"digest_bot_database/internal/config"
-	"digest_bot_database/internal/config/modules/users"
+	"digest_bot_database/internal/modules/users"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
