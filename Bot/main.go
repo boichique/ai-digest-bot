@@ -1,12 +1,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"strings"
 
+	"digest_bot/internal/config"
 	"digest_bot/internal/validation"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -17,7 +18,10 @@ const (
 var telegramBotToken string
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI(telegramBotToken)
+	cfg, err := config.NewConfig()
+	failOnError(err, "parse config")
+
+	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBotToken)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,11 +64,8 @@ func main() {
 	}
 }
 
-func init() {
-	flag.StringVar(&telegramBotToken, "t", "", "Telegram Bot Token")
-	flag.Parse()
-
-	if telegramBotToken == "" {
-		log.Fatal("telegram bot token is required")
+func failOnError(err error, message string) {
+	if err != nil {
+		log.Fatalf("%s: %s", message, err)
 	}
 }

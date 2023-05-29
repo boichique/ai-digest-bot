@@ -35,7 +35,8 @@ services:
 
   bot:
     build: ./bot
-    environment:
-      TG_ACCESS_TOKEN: ${TG_ACCESS_TOKEN}
+    command:
+      - t
+      - ${TG_ACCESS_TOKEN}
     depends_on:
       - server
