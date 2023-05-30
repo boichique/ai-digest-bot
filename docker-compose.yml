@@ -10,8 +10,13 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
+      PGDATA: /var/lib/postgres/data
     ports:
-      - "5432:5432"
+      - "6543:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 1s
+      timeout: 5s
 
   migrator:
     build: ./Database/tern
@@ -22,16 +27,17 @@ services:
       - --migrations
       - /migrations
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   server:
     build: Database
     restart: always
     ports:
-      - "8000:8000"
+      - "10000:10000"
     environment:
       DB_URL: postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}
-      PORT: 8000
+      PORT: 10000
     depends_on:
       - migrator
 

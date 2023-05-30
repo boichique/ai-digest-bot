@@ -78,7 +78,7 @@ func createSource(userID string, source string) error {
 		SetBody(map[string]string{
 			"source": source,
 		}).
-		Put(fmt.Sprintf("http://server:8000/api/%s", userID))
+		Put(fmt.Sprintf("http://server:10000/api/%s", userID))
 	if err != nil {
 		return err
 	}
