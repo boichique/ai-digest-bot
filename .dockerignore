@@ -1,6 +1,7 @@
 .gitignore
 
 tern
+venv
 
 **/Dockerfile
 **/docker-compose.yaml

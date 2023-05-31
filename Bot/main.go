@@ -52,10 +52,31 @@ func main() {
 			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Source %q added", source)))
 
 		// вывод списка источников
+		case "text":
+			source := strings.Trim(update.Message.Text, "/text ")
+			if err := validation.ValidateYoutube(source); err != nil {
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
+				break
+			}
+
+			text, err := client.GetVideoText(update.Message.Chat.ID, source)
+			if err != nil {
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
+				break
+			}
+
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, text))
+
+		// вывод списка источников
 		case "list":
 			sources, err := client.GetSourcesList(update.Message.Chat.ID)
 			if err != nil {
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
+				break
+			}
+
+			if len(sources) == 0 {
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "No sources found"))
 				break
 			}
 
@@ -64,7 +85,7 @@ func main() {
 				list = list + "\n" + source // попробовать сделать через стрингбилдер
 			}
 
-			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Source list\n%s", list)))
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Sources list:\n%s", list)))
 
 		// удаление источника по ссылке
 		case "delete":
@@ -76,12 +97,10 @@ func main() {
 			}
 
 			if err := client.DeleteSourceByLink(update.Message.Chat.ID, source); err != nil {
-				log.Print(err)
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
 				break
 			}
 
-			log.Print(err)
 			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Source %q deleted", source)))
 		}
 	}
