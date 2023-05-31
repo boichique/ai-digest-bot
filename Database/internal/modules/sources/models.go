@@ -1,6 +1,6 @@
 package sources
 
-type User struct {
-	ID     int    `json:"id"`
+type Source struct {
+	UserID int    `json:"userID"`
 	Source string `json:"source"`
 }

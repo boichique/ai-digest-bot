@@ -33,8 +33,9 @@ func main() {
 	sourcesModule := sources.NewModule(db)
 
 	api := e.Group("/api")
-	api.GET("/:userID", sourcesModule.Handler.GetSourcesByID)
 	api.PUT("/:userID", sourcesModule.Handler.CreateSource)
+	api.GET("/:userID/digest", sourcesModule.Handler.GetSourceText)
+	api.DELETE("/:userID", sourcesModule.Handler.DeleteSourceByLink)
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)

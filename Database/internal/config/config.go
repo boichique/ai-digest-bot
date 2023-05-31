@@ -7,8 +7,8 @@ import (
 )
 
 type Config struct {
-	DBUrl string `env:"DB_URL"`
-	Port  int    `env:"PORT" envDefault:"8000"`
+	DBUrl string `env:"DB_URL" envDefault:"postgres://user:pass@localhost:6543/aidigestbotdb"`
+	Port  int    `env:"PORT" envDefault:"10000"`
 }
 
 func NewConfig() (*Config, error) {

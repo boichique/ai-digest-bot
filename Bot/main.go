@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
-	"strconv"
 	"strings"
 
+	"digest_bot/internal/client"
 	"digest_bot/internal/config"
 	"digest_bot/internal/validation"
-	"github.com/go-resty/resty/v2"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -24,15 +23,10 @@ func main() {
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	// u - структура с конфигом для получения апдейтов
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
-
-	// канал в который будут прилетать новые сообщения
 	updates := bot.GetUpdatesChan(u)
 
-	// в канал updates прилетают структуры типа Update
-	// вычитываем их и обрабатываем
 	for update := range updates {
 		if update.Message == nil {
 			continue
@@ -50,19 +44,46 @@ func main() {
 				break
 			}
 
-			err = createSource(strconv.Itoa(int(update.Message.Chat.ID)), source)
-			if err != nil {
+			if err := client.CreateSource(update.Message.Chat.ID, source); err != nil {
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
 				break
 			}
 
 			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Source %q added", source)))
 
-		// вывод дайджеста
-		case "digest":
-			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "Not implemented"))
-		}
+		// вывод списка источников
+		case "list":
+			sources, err := client.GetSourcesList(update.Message.Chat.ID)
+			if err != nil {
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
+				break
+			}
 
+			var list string
+			for _, source := range sources {
+				list = list + "\n" + source // попробовать сделать через стрингбилдер
+			}
+
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Source list\n%s", list)))
+
+		// удаление источника по ссылке
+		case "delete":
+			source := strings.Trim(update.Message.Text, "/delete ")
+			if err := validation.ValidateYoutube(source); err != nil {
+				log.Print(source, err)
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
+				break
+			}
+
+			if err := client.DeleteSourceByLink(update.Message.Chat.ID, source); err != nil {
+				log.Print(err)
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
+				break
+			}
+
+			log.Print(err)
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Source %q deleted", source)))
+		}
 	}
 }
 
@@ -70,22 +91,4 @@ func failOnError(err error, message string) {
 	if err != nil {
 		log.Fatalf("%s: %s", message, err)
 	}
-}
-
-func createSource(userID string, source string) error {
-	client := resty.New()
-	resp, err := client.R().
-		SetBody(map[string]string{
-			"source": source,
-		}).
-		Put(fmt.Sprintf("http://server:10000/api/%s", userID))
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode())
-	}
-
-	return nil
 }
