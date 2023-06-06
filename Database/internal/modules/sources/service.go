@@ -14,6 +14,10 @@ func (s *Service) CreateSource(ctx context.Context, source *Source) error {
 	return s.repo.CreateSource(ctx, source)
 }
 
+func (s *Service) GetUsersIDList(ctx context.Context) ([]string, error) {
+	return s.repo.GetUsersIDList(ctx)
+}
+
 func (s *Service) GetUserSourcesByID(ctx context.Context, userID int) ([]string, error) {
 	return s.repo.GetUserSourcesByID(ctx, userID)
 }

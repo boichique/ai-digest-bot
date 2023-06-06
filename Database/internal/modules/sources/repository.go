@@ -26,6 +26,29 @@ func (r *Repository) CreateSource(ctx context.Context, source *Source) error {
 	return err
 }
 
+func (r *Repository) GetUsersIDList(ctx context.Context) ([]string, error) {
+	var user string
+
+	rows, err := r.db.
+		Query(
+			ctx,
+			`SELECT userid FROM sources`,
+		)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []string
+	for rows.Next() {
+		if err := rows.Scan(&user); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
 func (r *Repository) GetUserSourcesByID(ctx context.Context, userID int) ([]string, error) {
 	var source string
 

@@ -29,13 +29,19 @@ func main() {
 
 	db, err := getDB(context.Background(), cfg.DBUrl)
 	failOnError(err, "connect to database")
+	defer db.Close()
 
 	sourcesModule := sources.NewModule(db)
 
 	api := e.Group("/api")
-	api.PUT("/:userID", sourcesModule.Handler.CreateSource)
-	api.GET("/:userID/digest", sourcesModule.Handler.GetSourceText)
-	api.DELETE("/:userID", sourcesModule.Handler.DeleteSourceByLink)
+	api.PUT("/users/:userID", sourcesModule.Handler.CreateSource)
+	api.GET("/users", sourcesModule.Handler.GetUsersIDList)
+	api.GET("/users/:userID", func(c echo.Context) error {
+		c.Set("YoutubeApiToken", cfg.YoutubeApiToken)
+		return sourcesModule.Handler.GetNewVideosForUserSources(c)
+	})
+	api.GET("/users/:userID/sources", sourcesModule.Handler.GetUserSourcesByID)
+	api.DELETE("/users/:userID", sourcesModule.Handler.DeleteSourceByLink)
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)

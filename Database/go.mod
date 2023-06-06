@@ -5,6 +5,7 @@ go 1.20
 require github.com/jackc/pgx/v5 v5.3.1
 
 require (
+	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
