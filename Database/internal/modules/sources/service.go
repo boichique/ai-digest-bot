@@ -18,7 +18,7 @@ func (s *Service) GetUsersIDList(ctx context.Context) ([]string, error) {
 	return s.repo.GetUsersIDList(ctx)
 }
 
-func (s *Service) GetUserSourcesByID(ctx context.Context, userID int) ([]string, error) {
+func (s *Service) GetUserSourcesByUserID(ctx context.Context, userID int) ([]string, error) {
 	return s.repo.GetUserSourcesByID(ctx, userID)
 }
 

@@ -10,6 +10,7 @@ type Config struct {
 	DBUrl           string `env:"DB_URL" envDefault:"postgres://user:pass@localhost:6543/aidigestbotdb"`
 	Port            int    `env:"PORT" envDefault:"10000"`
 	YoutubeApiToken string `env:"YOUTUBE_API_TOKEN"`
+	ChatGPTApiToken string `env:"CHAT_GPT_API_TOKEN"`
 }
 
 func NewConfig() (*Config, error) {

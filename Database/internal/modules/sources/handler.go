@@ -1,10 +1,12 @@
 package sources
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
 	"digest_bot_database/internal/echox"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -47,7 +49,7 @@ func (h *Handler) GetUserSourcesByID(c echo.Context) error {
 		return err
 	}
 
-	sources, err := h.service.GetUserSourcesByID(c.Request().Context(), req.UserID)
+	sources, err := h.service.GetUserSourcesByUserID(c.Request().Context(), req.UserID)
 	if err != nil {
 		log.Print(err)
 		return err
@@ -56,13 +58,57 @@ func (h *Handler) GetUserSourcesByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, sources)
 }
 
+func (h *Handler) GetDigestForUserSource(c echo.Context) error {
+	req, err := echox.Bind[GetRequest](c)
+	if err != nil {
+		return err
+	}
+
+	sources, err := h.service.GetUserSourcesByUserID(c.Request().Context(), req.UserID)
+	if err != nil {
+		return err
+	}
+
+	var list []Video
+	youtubeApiToken := c.Get("YoutubeApiToken").(string)
+	for _, source := range sources {
+		videos, err := GetNewVideosForUserSource(source, youtubeApiToken)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+
+		list = append(list, videos...)
+	}
+
+	var fullDigest string
+	for _, video := range list {
+		digest, err := GetVideoText(int64(req.UserID), fmt.Sprintf("https://www.youtube.com/watch?v=%s", video.VideoID))
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+
+		fullDigest += digest
+	}
+
+	chatGPTApiToken := c.Get("ChatGPTApiToken").(string)
+	digest, err := GetDigestFromChatGPT(fullDigest, chatGPTApiToken)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+
+	return c.JSON(http.StatusOK, digest)
+}
+
 func (h *Handler) GetNewVideosForUserSources(c echo.Context) error {
 	req, err := echox.Bind[GetRequest](c)
 	if err != nil {
 		return err
 	}
 
-	sources, err := h.service.GetUserSourcesByID(c.Request().Context(), req.UserID)
+	sources, err := h.service.GetUserSourcesByUserID(c.Request().Context(), req.UserID)
 	if err != nil {
 		return err
 	}

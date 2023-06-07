@@ -40,6 +40,11 @@ func main() {
 		c.Set("YoutubeApiToken", cfg.YoutubeApiToken)
 		return sourcesModule.Handler.GetNewVideosForUserSources(c)
 	})
+	api.GET("/users/:userID/digest", func(c echo.Context) error {
+		c.Set("YoutubeApiToken", cfg.YoutubeApiToken)
+		c.Set("ChatGPTApiToken", cfg.ChatGPTApiToken)
+		return sourcesModule.Handler.GetDigestForUserSource(c)
+	})
 	api.GET("/users/:userID/sources", sourcesModule.Handler.GetUserSourcesByID)
 	api.DELETE("/users/:userID", sourcesModule.Handler.DeleteSourceByLink)
 

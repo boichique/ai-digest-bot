@@ -26,7 +26,7 @@ func main() {
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	c := cron.New()
-	c.AddFunc("30 21 * * *", func() { cronTasks.Test(bot) })
+	c.AddFunc("14 50 * * *", func() { cronTasks.Test(bot) })
 	c.Start()
 
 	u := tgbotapi.NewUpdate(0)
@@ -77,7 +77,7 @@ func main() {
 
 			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Sources list:\n%s", list)))
 
-		// output new videos on sources
+		// get new videos on sources
 		case "newVideos":
 			videos, err := client.GetNewVideosForUserSources(update.Message.Chat.ID)
 			if err != nil {
@@ -96,6 +96,21 @@ func main() {
 			}
 
 			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Today's new videos:\n%s", list)))
+
+		// get digest of all sources
+		case "digest":
+			digest, err := client.GetDigestForUserSource(update.Message.Chat.ID)
+			if err != nil {
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
+				break
+			}
+
+			if len(digest) == 0 {
+				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, "No digest for today"))
+				break
+			}
+
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Today's digest:\n%s", digest)))
 
 		// delete source by youtube link
 		case "delete":

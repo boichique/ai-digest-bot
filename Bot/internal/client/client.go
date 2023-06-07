@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -76,30 +75,6 @@ func GetSourcesList(userID int64) ([]string, error) {
 	return sources, nil
 }
 
-// delete this after tests
-func GetVideoText(userId int64, source string) (string, error) {
-	strUserID := strconv.Itoa(int(userId))
-
-	client := resty.New()
-	resp, err := client.R().
-		SetBody(map[string]string{
-			"link":   source,
-			"output": strUserID,
-		}).
-		Post("http://transcriptor:10001/transcribe")
-	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return "", fmt.Errorf("error getting text from video: %s", resp.Status())
-	}
-
-	log.Print("message received")
-	log.Print(resp.String())
-	return resp.String(), nil
-}
-
 func GetNewVideosForUserSources(userID int64) ([]Video, error) {
 	strUserID := strconv.Itoa(int(userID))
 
@@ -121,6 +96,22 @@ func GetNewVideosForUserSources(userID int64) ([]Video, error) {
 	}
 
 	return videos, nil
+}
+
+func GetDigestForUserSource(userID int64) (string, error) {
+	strUserID := strconv.Itoa(int(userID))
+
+	var digest string
+	client := resty.New()
+	resp, err := client.R().
+		SetResult(&digest).
+		Get(baseURL + strUserID + "/digest")
+
+	if resp.StatusCode() != http.StatusOK {
+		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode())
+	}
+
+	return digest, err
 }
 
 func DeleteSourceByLink(userID int64, source string) error {

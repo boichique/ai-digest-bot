@@ -39,6 +39,7 @@ services:
       DB_URL: postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}
       PORT: 10000
       YOUTUBE_API_TOKEN: ${YOUTUBE_API_TOKEN}
+      CHAT_GPT_API_TOKEN: ${CHAT_GPT_API_TOKEN}
     depends_on:
       - migrator
 
