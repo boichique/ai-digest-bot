@@ -4,46 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
+	"digest_bot_database/internal/apperrors"
 	"digest_bot_database/internal/log"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/sashabaranov/go-openai"
 )
-
-type Client struct {
-	client  *resty.Client
-	baseURL string
-}
-
-func NewClient(url string) *Client {
-	hc := &http.Client{}
-	rc := resty.NewWithClient(hc)
-	rc.OnAfterResponse(func(c *resty.Client, resp *resty.Response) error {
-		if resp.StatusCode() >= 400 {
-			return fmt.Errorf("http error %d: %s", resp.StatusCode(), resp.Status())
-		}
-		return nil
-	})
-
-	return &Client{
-		client:  rc,
-		baseURL: url,
-	}
-}
 
 const (
 	transcriptorURL     = "http://transcriptor:10001/transcribe"
 	youtubeAPIsearchURL = "https://youtube.googleapis.com/youtube/v3/search?"
 )
 
-func (c *Client) path(f string, args ...any) string {
-	return fmt.Sprintf(c.baseURL+f, args...)
-}
-
-func (c *Client) GetDigestFromChatGPT(ctx context.Context, fullDigest string, chatGPTApiToken string) (string, error) {
+func GetDigestFromChatGPT(ctx context.Context, fullDigest string, chatGPTApiToken string) (string, error) {
 	query := "Summarize this text in 200-300 symbols: "
 	log.FromContext(ctx).Info(
 		"chatGPT query",
@@ -70,22 +46,18 @@ func (c *Client) GetDigestFromChatGPT(ctx context.Context, fullDigest string, ch
 	return resp.Choices[0].Message.Content, nil
 }
 
-func (c *Client) GetNewVideosForUserSource(sourceID string, youtubeApiToken string) ([]Video, error) {
+func GetNewVideosForUserSource(sourceID string, youtubeApiToken string) ([]Video, error) {
 	client := resty.New()
 	resp, err := client.R().
 		Get(fmt.Sprintf("%spart=snippet&type=channel&q=%s&key=%s", youtubeAPIsearchURL, sourceID, youtubeApiToken))
 	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
+		return nil, apperrors.Internal(err)
 	}
 
 	var data map[string]interface{}
 	err = json.Unmarshal(resp.Body(), &data)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.Internal(err)
 	}
 
 	var channelID string
@@ -97,14 +69,10 @@ func (c *Client) GetNewVideosForUserSource(sourceID string, youtubeApiToken stri
 		}
 	}
 
-	resp, err = c.client.R().
+	resp, err = client.R().
 		Get(fmt.Sprintf("%spart=snippet,id&channelId=%s&order=date&maxResults=15&key=%s", youtubeAPIsearchURL, channelID, youtubeApiToken))
 	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
+		return nil, apperrors.Internal(err)
 	}
 
 	var searchListResponse SearchListResponse
@@ -124,7 +92,7 @@ func (c *Client) GetNewVideosForUserSource(sourceID string, youtubeApiToken stri
 
 		date, err := time.Parse(time.RFC3339, video.PublishedAt)
 		if err != nil {
-			return nil, err
+			return nil, apperrors.Internal(err)
 		}
 
 		if date.After(today) {
@@ -135,21 +103,18 @@ func (c *Client) GetNewVideosForUserSource(sourceID string, youtubeApiToken stri
 	return videos, nil
 }
 
-func (c *Client) GetVideoText(userID int64, source string) (string, error) {
+func GetVideoText(userID int64, source string) (string, error) {
 	strUserID := strconv.Itoa(int(userID))
 
-	resp, err := c.client.R().
+	client := resty.New()
+	resp, err := client.R().
 		SetBody(map[string]string{
 			"link":   source,
 			"output": strUserID,
 		}).
 		Post(transcriptorURL)
 	if err != nil {
-		return "", err
-	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return "", fmt.Errorf("error getting text from video: %s", resp.Status())
+		return "", apperrors.Internal(err)
 	}
 
 	return resp.String(), nil

@@ -23,11 +23,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	cl := client.New(cfg.BaseURL)
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	c := cron.New()
-	c.AddFunc("14 50 * * *", func() { cronTasks.Test(bot) })
-	c.Start()
+	cr := cron.New()
+	cr.AddFunc("14 50 * * *", func() { cronTasks.Test(bot, cl) })
+	cr.Start()
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -50,7 +51,7 @@ func main() {
 				break
 			}
 
-			if err := client.CreateSource(update.Message.Chat.ID, source); err != nil {
+			if err := cl.CreateSource(update.Message.Chat.ID, source); err != nil {
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
 				break
 			}
@@ -59,7 +60,7 @@ func main() {
 
 		// output list of sources
 		case "list":
-			sources, err := client.GetSourcesList(update.Message.Chat.ID)
+			sources, err := cl.GetSourcesList(update.Message.Chat.ID)
 			if err != nil {
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
 				break
@@ -79,7 +80,7 @@ func main() {
 
 		// get new videos on sources
 		case "newVideos":
-			videos, err := client.GetNewVideosForUserSources(update.Message.Chat.ID)
+			videos, err := cl.GetNewVideosForUserSources(update.Message.Chat.ID)
 			if err != nil {
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
 				break
@@ -99,7 +100,7 @@ func main() {
 
 		// get digest of all sources
 		case "digest":
-			digest, err := client.GetDigestForUserSource(update.Message.Chat.ID)
+			digest, err := cl.GetDigestForUserSource(update.Message.Chat.ID)
 			if err != nil {
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
 				break
@@ -121,7 +122,7 @@ func main() {
 				break
 			}
 
-			if err := client.DeleteSourceByLink(update.Message.Chat.ID, source); err != nil {
+			if err := cl.DeleteSourceByLink(update.Message.Chat.ID, source); err != nil {
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
 				break
 			}

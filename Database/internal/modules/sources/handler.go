@@ -11,7 +11,6 @@ import (
 
 type Handler struct {
 	service *Service
-	client  *Client
 }
 
 func NewHandler(service *Service) *Handler {
@@ -69,7 +68,7 @@ func (h *Handler) GetDigestForUserSource(c echo.Context) error {
 	var list []Video
 	youtubeApiToken := c.Get("YoutubeApiToken").(string)
 	for _, sourceID := range sourcesIDs {
-		videos, err := h.client.GetNewVideosForUserSource(sourceID, youtubeApiToken)
+		videos, err := GetNewVideosForUserSource(sourceID, youtubeApiToken)
 		if err != nil {
 			return err
 		}
@@ -79,7 +78,7 @@ func (h *Handler) GetDigestForUserSource(c echo.Context) error {
 
 	var fullDigest string
 	for _, video := range list {
-		digest, err := h.client.GetVideoText(int64(req.UserID), fmt.Sprintf("https://www.youtube.com/watch?v=%s", video.VideoID))
+		digest, err := GetVideoText(int64(req.UserID), fmt.Sprintf("https://www.youtube.com/watch?v=%s", video.VideoID))
 		if err != nil {
 			return err
 		}
@@ -88,7 +87,7 @@ func (h *Handler) GetDigestForUserSource(c echo.Context) error {
 	}
 
 	chatGPTApiToken := c.Get("ChatGPTApiToken").(string)
-	digest, err := h.client.GetDigestFromChatGPT(c.Request().Context(), fullDigest, chatGPTApiToken)
+	digest, err := GetDigestFromChatGPT(c.Request().Context(), fullDigest, chatGPTApiToken)
 	if err != nil {
 		return err
 	}
@@ -110,7 +109,7 @@ func (h *Handler) GetNewVideosForUserSources(c echo.Context) error {
 	var list []Video
 	youtubeApiToken := c.Get("YoutubeApiToken").(string)
 	for _, source := range sources {
-		videos, err := h.client.GetNewVideosForUserSource(source, youtubeApiToken)
+		videos, err := GetNewVideosForUserSource(source, youtubeApiToken)
 		if err != nil {
 			return err
 		}

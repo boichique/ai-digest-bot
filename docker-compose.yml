@@ -45,13 +45,15 @@ services:
     depends_on:
       - migrator
 
-  # transcriptor:
-  #   build: Transcriptor
-  #   restart: always
-  #   ports:
-  #     - 10001:10001
-  #   depends_on:
-  #     - server
+  transcriptor:
+    build: Transcriptor
+    restart: always
+    ports:
+      - 10001:10001
+    environment:
+      BASE_URL: ${BASE_URL}
+    depends_on:
+      - server
 
   bot:
     build: Bot

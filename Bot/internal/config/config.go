@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	TelegramBotToken string `env:"TG_BOT_TOKEN"`
+	BaseURL          string `env:"BASE_URL"`
 }
 
 func NewConfig() (*Config, error) {
