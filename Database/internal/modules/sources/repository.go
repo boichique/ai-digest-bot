@@ -4,6 +4,9 @@ import (
 	"context"
 	"log"
 
+	"digest_bot_database/internal/apperrors"
+	"digest_bot_database/internal/dbx"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -23,12 +26,17 @@ func (r *Repository) CreateSource(ctx context.Context, source *Source) error {
 			VALUES ($1, $2);`,
 			source.UserID, source.Source)
 
-	return err
+	switch {
+	case dbx.IsUniqueViolation(err, "source"):
+		return apperrors.AlreadyExists("source", source)
+	case err != nil:
+		return apperrors.Internal(err)
+	}
+
+	return nil
 }
 
 func (r *Repository) GetUsersIDList(ctx context.Context) ([]string, error) {
-	var user string
-
 	rows, err := r.db.
 		Query(
 			ctx,
@@ -37,21 +45,21 @@ func (r *Repository) GetUsersIDList(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	var users []string
+	var usersIDs []string
 	for rows.Next() {
-		if err := rows.Scan(&user); err != nil {
-			return nil, err
+		var userID string
+		if err := rows.Scan(&userID); err != nil {
+			return nil, apperrors.Internal(err)
 		}
-		users = append(users, user)
+		usersIDs = append(usersIDs, userID)
 	}
 
-	return users, nil
+	return usersIDs, nil
 }
 
 func (r *Repository) GetUserSourcesByID(ctx context.Context, userID int) ([]string, error) {
-	var source string
-
 	rows, err := r.db.
 		Query(
 			ctx,
@@ -64,8 +72,9 @@ func (r *Repository) GetUserSourcesByID(ctx context.Context, userID int) ([]stri
 
 	var sources []string
 	for rows.Next() {
+		var source string
 		if err := rows.Scan(&source); err != nil {
-			return nil, err
+			return nil, apperrors.Internal(err)
 		}
 		sources = append(sources, source)
 	}
@@ -74,14 +83,21 @@ func (r *Repository) GetUserSourcesByID(ctx context.Context, userID int) ([]stri
 }
 
 func (r *Repository) DeleteSourceByLink(ctx context.Context, source *Source) error {
-	_, err := r.db.
+	n, err := r.db.
 		Exec(
 			ctx,
 			`DELETE FROM sources
 			WHERE userid = $1 
 			AND source = $2;`,
 			source.UserID, source.Source)
+	if err != nil {
+		log.Print(err)
+		return apperrors.Internal(err)
+	}
 
-	log.Print(err)
-	return err
+	if n.RowsAffected() == 0 {
+		return apperrors.NotFound("source", source)
+	}
+
+	return nil
 }

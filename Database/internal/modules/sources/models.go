@@ -1,8 +1,10 @@
 package sources
 
 type Source struct {
-	UserID int    `json:"userID"`
-	Source string `json:"source"`
+	UserID       int      `json:"userID"`
+	Source       string   `json:"source"`
+	NewVids      []string `json:"newVids"`
+	TodaysDigest string   `json:"todaysDigest"`
 }
 
 type Video struct {
@@ -14,14 +16,14 @@ type Video struct {
 type SearchResult struct {
 	Kind string `json:"kind"`
 	Etag string `json:"etag"`
-	Id   struct {
+	ID   struct {
 		Kind      string `json:"kind"`
-		ChannelId string `json:"channelId,omitempty"`
-		VideoId   string `json:"videoId,omitempty"`
+		ChannelID string `json:"channelId,omitempty"`
+		VideoID   string `json:"videoId,omitempty"`
 	} `json:"id"`
 	Snippet struct {
 		PublishedAt string `json:"publishedAt"`
-		ChannelId   string `json:"channelId"`
+		ChannelID   string `json:"channelId"`
 		Title       string `json:"title"`
 		Description string `json:"description"`
 		Thumbnails  map[string]struct {

@@ -38,18 +38,20 @@ services:
     environment:
       DB_URL: postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}
       PORT: 10000
+      LOCAL: ${LOCAL}
+      LOG_LEVEL: ${LOG_LEVEL}
       YOUTUBE_API_TOKEN: ${YOUTUBE_API_TOKEN}
       CHAT_GPT_API_TOKEN: ${CHAT_GPT_API_TOKEN}
     depends_on:
       - migrator
 
-  transcriptor:
-    build: Transcriptor
-    restart: always
-    ports:
-      - 10001:10001
-    depends_on:
-      - server
+  # transcriptor:
+  #   build: Transcriptor
+  #   restart: always
+  #   ports:
+  #     - 10001:10001
+  #   depends_on:
+  #     - server
 
   bot:
     build: Bot

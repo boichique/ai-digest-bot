@@ -4,21 +4,76 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
+	"digest_bot_database/internal/log"
 	"github.com/go-resty/resty/v2"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai"
 )
 
-func GetNewVideosForUserSource(userSource string, youtubeApiToken string) ([]Video, error) {
-	channelLink := strings.TrimLeft(userSource, "https://www.youtube.com/@")
+type Client struct {
+	client  *resty.Client
+	baseURL string
+}
+
+func NewClient(url string) *Client {
+	hc := &http.Client{}
+	rc := resty.NewWithClient(hc)
+	rc.OnAfterResponse(func(c *resty.Client, resp *resty.Response) error {
+		if resp.StatusCode() >= 400 {
+			return fmt.Errorf("http error %d: %s", resp.StatusCode(), resp.Status())
+		}
+		return nil
+	})
+
+	return &Client{
+		client:  rc,
+		baseURL: url,
+	}
+}
+
+const (
+	transcriptorURL     = "http://transcriptor:10001/transcribe"
+	youtubeAPIsearchURL = "https://youtube.googleapis.com/youtube/v3/search?"
+)
+
+func (c *Client) path(f string, args ...any) string {
+	return fmt.Sprintf(c.baseURL+f, args...)
+}
+
+func (c *Client) GetDigestFromChatGPT(ctx context.Context, fullDigest string, chatGPTApiToken string) (string, error) {
+	query := "Summarize this text in 200-300 symbols: "
+	log.FromContext(ctx).Info(
+		"chatGPT query",
+		"fullDigest", fullDigest,
+	)
+
+	client := openai.NewClient(chatGPTApiToken)
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT3Dot5Turbo0301,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: query + fullDigest,
+				},
+			},
+		},
+	)
+	if err != nil {
+		return "", fmt.Errorf("ChatCompletion error: %w\n", err)
+	}
+
+	return resp.Choices[0].Message.Content, nil
+}
+
+func (c *Client) GetNewVideosForUserSource(sourceID string, youtubeApiToken string) ([]Video, error) {
 	client := resty.New()
 	resp, err := client.R().
-		Get(fmt.Sprintf("https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=%s&key=%s", channelLink, youtubeApiToken))
+		Get(fmt.Sprintf("%spart=snippet&type=channel&q=%s&key=%s", youtubeAPIsearchURL, sourceID, youtubeApiToken))
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +97,8 @@ func GetNewVideosForUserSource(userSource string, youtubeApiToken string) ([]Vid
 		}
 	}
 
-	resp, err = client.R().
-		Get(fmt.Sprintf("https://www.googleapis.com/youtube/v3/search?channelId=%s&part=snippet,id&order=date&maxResults=15&key=%s", channelID, youtubeApiToken))
+	resp, err = c.client.R().
+		Get(fmt.Sprintf("%spart=snippet,id&channelId=%s&order=date&maxResults=15&key=%s", youtubeAPIsearchURL, channelID, youtubeApiToken))
 	if err != nil {
 		return nil, err
 	}
@@ -58,12 +113,12 @@ func GetNewVideosForUserSource(userSource string, youtubeApiToken string) ([]Vid
 		return nil, err
 	}
 
-	today := time.Now().Add(-24 * time.Hour)
 	var videos []Video
+	today := time.Now().Add(-24 * time.Hour)
 	for _, item := range searchListResponse.Items {
 		video := Video{
 			Title:       item.Snippet.Title,
-			VideoID:     item.Id.VideoId,
+			VideoID:     item.ID.VideoID,
 			PublishedAt: item.Snippet.PublishedAt,
 		}
 
@@ -80,16 +135,15 @@ func GetNewVideosForUserSource(userSource string, youtubeApiToken string) ([]Vid
 	return videos, nil
 }
 
-func GetVideoText(userID int64, source string) (string, error) {
+func (c *Client) GetVideoText(userID int64, source string) (string, error) {
 	strUserID := strconv.Itoa(int(userID))
 
-	client := resty.New()
-	resp, err := client.R().
+	resp, err := c.client.R().
 		SetBody(map[string]string{
 			"link":   source,
 			"output": strUserID,
 		}).
-		Post("http://transcriptor:10001/transcribe")
+		Post(transcriptorURL)
 	if err != nil {
 		return "", err
 	}
@@ -99,28 +153,4 @@ func GetVideoText(userID int64, source string) (string, error) {
 	}
 
 	return resp.String(), nil
-}
-
-func GetDigestFromChatGPT(fullDigest string, chatGPTApiToken string) (string, error) {
-	query := "Summarize this text in 200-300 symbols: "
-	log.Print(fullDigest)
-
-	client := openai.NewClient(chatGPTApiToken)
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT3Dot5Turbo0301,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: query + fullDigest,
-				},
-			},
-		},
-	)
-	if err != nil {
-		return "", fmt.Errorf("ChatCompletion error: %w\n", err)
-	}
-
-	return resp.Choices[0].Message.Content, nil
 }

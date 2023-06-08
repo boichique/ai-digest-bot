@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	YoutubeChannelRe = `^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/@[a-zA-Z0-9_-]{1,}`
+	YoutubeChannelRe = `^@[a-zA-Z0-9_-]{1,}`
 	YoutubeVideoRe   = `^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/watch\?v=.{1,}`
 )
 

@@ -1,6 +1,10 @@
 package sources
 
-import "context"
+import (
+	"context"
+
+	"digest_bot_database/internal/log"
+)
 
 type Service struct {
 	repo *Repository
@@ -11,7 +15,17 @@ func NewService(repo *Repository) *Service {
 }
 
 func (s *Service) CreateSource(ctx context.Context, source *Source) error {
-	return s.repo.CreateSource(ctx, source)
+	if err := s.repo.CreateSource(ctx, source); err != nil {
+		return err
+	}
+
+	log.FromContext(ctx).Info(
+		"source created",
+		"source", source.Source,
+		"forUser", source.UserID,
+	)
+
+	return nil
 }
 
 func (s *Service) GetUsersIDList(ctx context.Context) ([]string, error) {
@@ -23,5 +37,16 @@ func (s *Service) GetUserSourcesByUserID(ctx context.Context, userID int) ([]str
 }
 
 func (s *Service) DeleteSourceByLink(ctx context.Context, source *Source) error {
-	return s.repo.DeleteSourceByLink(ctx, source)
+	if err := s.repo.DeleteSourceByLink(ctx, source); err != nil {
+		log.FromContext(ctx).Error(err.Error())
+		return err
+	}
+
+	log.FromContext(ctx).Info(
+		"source deleted",
+		"source", source.Source,
+		"forUser", source.UserID,
+	)
+
+	return nil
 }

@@ -7,7 +7,7 @@ RUN apt-get install -y git
 RUN pip install --no-cache --upgrade pip setuptools
 RUN pip install pytube
 RUN pip install git+https://github.com/openai/whisper.git
-RUN apt-get install -y ffmpeg
+RUN apt-get install -y ffmpeg --fix-missing
 
 COPY . /transcriptor
 

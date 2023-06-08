@@ -7,8 +7,10 @@ import (
 )
 
 type Config struct {
-	DBUrl           string `env:"DB_URL" envDefault:"postgres://user:pass@localhost:6543/aidigestbotdb"`
-	Port            int    `env:"PORT" envDefault:"10000"`
+	DBUrl           string `env:"DB_URL"`
+	Port            int    `env:"PORT"`
+	Local           bool   `env:"LOCAL" envDefault:"false"`
+	LogLevel        string `env:"LOG_LEVEL" envDefault:"info"`
 	YoutubeApiToken string `env:"YOUTUBE_API_TOKEN"`
 	ChatGPTApiToken string `env:"CHAT_GPT_API_TOKEN"`
 }

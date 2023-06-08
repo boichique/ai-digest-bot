@@ -44,7 +44,7 @@ func main() {
 		switch update.Message.Command() {
 		// add interesting source to db
 		case "new":
-			source := strings.Trim(update.Message.Text, "/new ")
+			source := strings.TrimLeft(update.Message.Text, "/new ")
 			if err := validation.ValidateLink(validation.YoutubeChannelRe, source); err != nil {
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
 				break
@@ -72,10 +72,10 @@ func main() {
 
 			var list string
 			for _, source := range sources {
-				list = list + fmt.Sprintf("\n%s", source) // попробовать сделать через стрингбилдер
+				list = list + fmt.Sprintf("\nhttps://www.youtube.com/%s", source) // попробовать сделать через стрингбилдер
 			}
 
-			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Sources list:\n%s", list)))
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Sources list:%s", list)))
 
 		// get new videos on sources
 		case "newVideos":
@@ -114,7 +114,7 @@ func main() {
 
 		// delete source by youtube link
 		case "delete":
-			source := strings.Trim(update.Message.Text, "/delete ")
+			source := strings.TrimLeft(update.Message.Text, "/delete ")
 			if err := validation.ValidateLink(validation.YoutubeChannelRe, source); err != nil {
 				log.Print(source, err)
 				bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, err.Error()))
