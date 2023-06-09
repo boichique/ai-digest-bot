@@ -4,8 +4,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const baseURL = "http://server:10000"
-
 type Module struct {
 	Handler    *Handler
 	Service    *Service

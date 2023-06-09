@@ -9,7 +9,6 @@ import (
 
 	"digest_bot_database/internal/apperrors"
 	"digest_bot_database/internal/log"
-
 	"github.com/go-resty/resty/v2"
 	"github.com/sashabaranov/go-openai"
 )
@@ -20,30 +19,30 @@ const (
 )
 
 func GetDigestFromChatGPT(ctx context.Context, fullDigest string, chatGPTApiToken string) (string, error) {
-	query := "Summarize this text in 200-300 symbols: "
 	log.FromContext(ctx).Info(
-		"chatGPT query",
-		"fullDigest", fullDigest,
+		"digest for chatGPT",
+		"digest", fullDigest,
 	)
 
 	client := openai.NewClient(chatGPTApiToken)
-	resp, err := client.CreateChatCompletion(
+	resp, err := client.CreateCompletion(
 		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT3Dot5Turbo0301,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: query + fullDigest,
-				},
-			},
+		openai.CompletionRequest{
+			Model:       openai.GPT3Dot5Turbo0301,
+			Prompt:      fmt.Sprintf("ОЧЕНЬ КРАТКО ПЕРЕСКАЖИ ТЕКСТ В 100 СИМВОЛОВ: \n\n%s", fullDigest),
+			Temperature: 1,
+			MaxTokens:   300,
 		},
 	)
 	if err != nil {
-		return "", fmt.Errorf("ChatCompletion error: %w\n", err)
+		log.FromContext(ctx).Error(
+			"chatGPT response error: ",
+			"error", err.Error(),
+		)
+		return "", fmt.Errorf("ChatCompletion error: %w", err)
 	}
 
-	return resp.Choices[0].Message.Content, nil
+	return resp.Choices[0].Text, nil
 }
 
 func GetNewVideosForUserSource(sourceID string, youtubeApiToken string) ([]Video, error) {

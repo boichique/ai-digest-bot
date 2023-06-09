@@ -48,8 +48,6 @@ func New(ctx context.Context, cfg *config.Config) (*Server, error) {
 	e := echo.New()
 	sourcesModule := sources.NewModule(db)
 	e.Use(middleware.Recover())
-	e.HideBanner = true
-	e.HidePort = true
 
 	api := e.Group("/api")
 	api.Use(echox.Logger)

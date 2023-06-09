@@ -2,28 +2,19 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"strconv"
 )
 
 func (c *Client) CreateSource(userID int64, source string) error {
 	strUserID := strconv.Itoa(int(userID))
 
-	resp, err := c.client.R().
+	_, err := c.client.R().
 		SetBody(map[string]string{
 			"source": source,
 		}).
 		Put(c.path("/api/users/%s", strUserID))
-	if err != nil {
-		return err
-	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode())
-	}
-
-	return nil
+	return err
 }
 
 func (c *Client) GetUsersList() ([]string, error) {
@@ -33,17 +24,10 @@ func (c *Client) GetUsersList() ([]string, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
-	}
-
 	var users []string
 	err = json.Unmarshal(resp.Body(), &users)
-	if err != nil {
-		return nil, err
-	}
 
-	return users, nil
+	return users, err
 }
 
 func (c *Client) GetSourcesList(userID int64) ([]string, error) {
@@ -55,17 +39,10 @@ func (c *Client) GetSourcesList(userID int64) ([]string, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
-	}
-
 	var sources []string
 	err = json.Unmarshal(resp.Body(), &sources)
-	if err != nil {
-		return nil, err
-	}
 
-	return sources, nil
+	return sources, err
 }
 
 func (c *Client) GetNewVideosForUserSources(userID int64) ([]Video, error) {
@@ -77,30 +54,19 @@ func (c *Client) GetNewVideosForUserSources(userID int64) ([]Video, error) {
 		return nil, err
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
-	}
-
 	var videos []Video
 	err = json.Unmarshal(resp.Body(), &videos)
-	if err != nil {
-		return nil, err
-	}
 
-	return videos, nil
+	return videos, err
 }
 
 func (c *Client) GetDigestForUserSource(userID int64) (string, error) {
 	strUserID := strconv.Itoa(int(userID))
 
 	var digest string
-	resp, err := c.client.R().
+	_, err := c.client.R().
 		SetResult(&digest).
 		Get(c.path("/api/users/%s/digest", strUserID))
-
-	if resp.StatusCode() != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode())
-	}
 
 	return digest, err
 }
@@ -108,18 +74,11 @@ func (c *Client) GetDigestForUserSource(userID int64) (string, error) {
 func (c *Client) DeleteSourceByLink(userID int64, source string) error {
 	strUserID := strconv.Itoa(int(userID))
 
-	resp, err := c.client.R().
+	_, err := c.client.R().
 		SetBody(map[string]string{
 			"source": source,
 		}).
 		Delete(c.path("/api/users/%s", strUserID))
-	if err != nil {
-		return err
-	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode())
-	}
-
-	return nil
+	return err
 }

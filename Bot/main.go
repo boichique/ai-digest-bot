@@ -7,7 +7,7 @@ import (
 
 	"digest_bot/internal/client"
 	"digest_bot/internal/config"
-	"digest_bot/internal/cronTasks"
+	"digest_bot/internal/crontasks"
 	"digest_bot/internal/validation"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -27,7 +27,7 @@ func main() {
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	cr := cron.New()
-	cr.AddFunc("14 50 * * *", func() { cronTasks.Test(bot, cl) })
+	cr.AddFunc("0 * 18 * *", func() { crontasks.SendDigestToAllUsers(bot, cl) }) // update every hour (* 0 * * *)
 	cr.Start()
 
 	u := tgbotapi.NewUpdate(0)
@@ -35,10 +35,6 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.Message == nil {
-			continue
-		}
-
 		// log incoming messages with username
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
@@ -76,7 +72,7 @@ func main() {
 				list = list + fmt.Sprintf("\nhttps://www.youtube.com/%s", source) // попробовать сделать через стрингбилдер
 			}
 
-			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Sources list:%s", list)))
+			bot.Send(tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Sources list:\n%s", list)))
 
 		// get new videos on sources
 		case "newVideos":

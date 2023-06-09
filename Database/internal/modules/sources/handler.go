@@ -89,6 +89,7 @@ func (h *Handler) GetDigestForUserSource(c echo.Context) error {
 	chatGPTApiToken := c.Get("ChatGPTApiToken").(string)
 	digest, err := GetDigestFromChatGPT(c.Request().Context(), fullDigest, chatGPTApiToken)
 	if err != nil {
+		log.Print(err)
 		return err
 	}
 
