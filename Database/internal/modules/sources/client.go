@@ -8,29 +8,54 @@ import (
 	"time"
 
 	"digest_bot_database/internal/apperrors"
+	"digest_bot_database/internal/config"
 	"digest_bot_database/internal/log"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/sashabaranov/go-openai"
 )
 
+type Client struct {
+	Config *config.Config
+}
+
+func NewClient(cfg *config.Config) *Client {
+	return &Client{Config: cfg}
+}
+
 const (
-	transcriptorURL     = "http://transcriptor:10001/transcribe"
-	youtubeAPIsearchURL = "https://youtube.googleapis.com/youtube/v3/search?"
+	transcriptorURL                 = "http://transcriptor:10001/transcribe"
+	youtubeAPIsearchURL             = "https://youtube.googleapis.com/youtube/v3/search?"
+	youtubeAPIgetChannelIDURL       = youtubeAPIsearchURL + "part=snippet&type=channel&"
+	youtubeAPIgetNewVideosByHourURL = youtubeAPIsearchURL + "part=snippet,id&order=date&maxResults=15&"
 )
 
-func GetDigestFromChatGPT(ctx context.Context, fullDigest string, chatGPTApiToken string) (string, error) {
+func (c *Client) GetSourceDigestFromChatGPT(ctx context.Context, fullDigest string) (string, error) {
 	log.FromContext(ctx).Info(
 		"digest for chatGPT",
 		"digest", fullDigest,
 	)
 
-	client := openai.NewClient(chatGPTApiToken)
-	resp, err := client.CreateCompletion(
+	client := openai.NewClient(c.Config.ChatGPTApiToken)
+	resp, err := client.CreateChatCompletion(
 		context.Background(),
-		openai.CompletionRequest{
-			Model:       openai.GPT3Dot5Turbo0301,
-			Prompt:      fmt.Sprintf("ОЧЕНЬ КРАТКО ПЕРЕСКАЖИ ТЕКСТ В 100 СИМВОЛОВ: \n\n%s", fullDigest),
-			Temperature: 1,
+		openai.ChatCompletionRequest{
+			Model: openai.GPT3Dot5Turbo0301,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    "user",
+					Content: "Wait for the full text and summarize it in one sentence. End of text will be when I write 'End of text'.",
+				},
+				{
+					Role:    "user",
+					Content: fullDigest,
+				},
+				{
+					Role:    "user",
+					Content: "End of text",
+				},
+			},
+			Temperature: 0,
 			MaxTokens:   300,
 		},
 	)
@@ -42,13 +67,13 @@ func GetDigestFromChatGPT(ctx context.Context, fullDigest string, chatGPTApiToke
 		return "", fmt.Errorf("ChatCompletion error: %w", err)
 	}
 
-	return resp.Choices[0].Text, nil
+	return resp.Choices[0].Message.Content, nil
 }
 
-func GetNewVideosForUserSource(sourceID string, youtubeApiToken string) ([]Video, error) {
+func (c *Client) GetNewVideosForUserSourceByHour(sourceID string) ([]Video, error) {
 	client := resty.New()
 	resp, err := client.R().
-		Get(fmt.Sprintf("%spart=snippet&type=channel&q=%s&key=%s", youtubeAPIsearchURL, sourceID, youtubeApiToken))
+		Get(fmt.Sprintf("%sq=%s&key=%s", youtubeAPIgetNewVideosByHourURL, sourceID, c.Config.YoutubeApiToken))
 	if err != nil {
 		return nil, apperrors.Internal(err)
 	}
@@ -69,7 +94,7 @@ func GetNewVideosForUserSource(sourceID string, youtubeApiToken string) ([]Video
 	}
 
 	resp, err = client.R().
-		Get(fmt.Sprintf("%spart=snippet,id&channelId=%s&order=date&maxResults=15&key=%s", youtubeAPIsearchURL, channelID, youtubeApiToken))
+		Get(fmt.Sprintf("%schannelId=%s&key=%s", youtubeAPIsearchURL, channelID, c.Config.YoutubeApiToken))
 	if err != nil {
 		return nil, apperrors.Internal(err)
 	}
@@ -81,7 +106,7 @@ func GetNewVideosForUserSource(sourceID string, youtubeApiToken string) ([]Video
 	}
 
 	var videos []Video
-	today := time.Now().Add(-24 * time.Hour)
+	today := time.Now().Add(-1 * time.Hour)
 	for _, item := range searchListResponse.Items {
 		video := Video{
 			Title:       item.Snippet.Title,

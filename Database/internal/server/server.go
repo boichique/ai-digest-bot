@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"digest_bot_database/internal/config"
+	"digest_bot_database/internal/crontasks"
 	"digest_bot_database/internal/echox"
 	"digest_bot_database/internal/log"
 	"digest_bot_database/internal/modules/sources"
@@ -15,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/robfig/cron"
 	"golang.org/x/exp/slog"
 )
 
@@ -46,23 +48,21 @@ func New(ctx context.Context, cfg *config.Config) (*Server, error) {
 	})
 
 	e := echo.New()
-	sourcesModule := sources.NewModule(db)
+	sourcesModule := sources.NewModule(db, cfg)
 	e.Use(middleware.Recover())
+
+	cr := cron.New()
+	cr.AddFunc("* 30 * * *", func() { crontasks.UpdateFullDigestsForUsers(ctx, sourcesModule) }) // update every hour at minute 10 (* 10 * * *)
+	cr.AddFunc("* * 21 * *", func() { crontasks.PurgeTodaysColums(ctx, sourcesModule) })
+	cr.Start()
 
 	api := e.Group("/api")
 	api.Use(echox.Logger)
 
 	api.PUT("/users/:userID", sourcesModule.Handler.CreateSource)
 	api.GET("/users", sourcesModule.Handler.GetUsersIDList)
-	api.GET("/users/:userID", func(c echo.Context) error {
-		c.Set("YoutubeApiToken", cfg.YoutubeApiToken)
-		return sourcesModule.Handler.GetNewVideosForUserSources(c)
-	})
-	api.GET("/users/:userID/digest", func(c echo.Context) error {
-		c.Set("YoutubeApiToken", cfg.YoutubeApiToken)
-		c.Set("ChatGPTApiToken", cfg.ChatGPTApiToken)
-		return sourcesModule.Handler.GetDigestForUserSource(c)
-	})
+	api.GET("/users/:userID", sourcesModule.Handler.GetNewVideosForUserSources)
+	api.GET("/users/:userID/digest", sourcesModule.Handler.GetDigestForUserSource)
 	api.GET("/users/:userID/sources", sourcesModule.Handler.GetUserSourcesByID)
 	api.DELETE("/users/:userID", sourcesModule.Handler.DeleteSourceByLink)
 

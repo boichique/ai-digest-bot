@@ -10,10 +10,7 @@ import (
 	"time"
 
 	"digest_bot_database/internal/config"
-	"digest_bot_database/internal/crontasks"
 	"digest_bot_database/internal/server"
-
-	"github.com/robfig/cron"
 )
 
 const (
@@ -27,10 +24,6 @@ func main() {
 
 	srv, err := server.New(context.Background(), cfg)
 	failOnError(err, "create server")
-
-	cr := cron.New()
-	cr.AddFunc("* 10 * * *", func() { crontasks.UpdateFullDigestsForUsers() }) // update every hour on 10 minutes (* 10 * * *)
-	cr.Start()
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)

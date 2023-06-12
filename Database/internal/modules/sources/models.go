@@ -13,6 +13,21 @@ type Video struct {
 	PublishedAt string `json:"publishedAt"`
 }
 
+func (v Video) CompareTo(other interface{}) int {
+	otherVideo, ok := other.(Video)
+	if !ok {
+		panic("Cannot compare Video with non-Video type")
+	}
+
+	if v.Title < otherVideo.Title {
+		return -1
+	} else if v.Title > otherVideo.Title {
+		return 1
+	} else {
+		return 0
+	}
+}
+
 type SearchResult struct {
 	Kind string `json:"kind"`
 	Etag string `json:"etag"`

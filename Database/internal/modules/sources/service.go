@@ -32,13 +32,16 @@ func (s *Service) GetUsersIDList(ctx context.Context) ([]string, error) {
 	return s.repo.GetUsersIDList(ctx)
 }
 
-func (s *Service) GetUserSourcesByUserID(ctx context.Context, userID int) ([]string, error) {
-	return s.repo.GetUserSourcesByID(ctx, userID)
+func (s *Service) GetSourcesByUserID(ctx context.Context, userID int) ([]string, error) {
+	return s.repo.GetSourcesByUserID(ctx, userID)
 }
 
 func (s *Service) DeleteSourceByLink(ctx context.Context, source *Source) error {
 	if err := s.repo.DeleteSourceByLink(ctx, source); err != nil {
-		log.FromContext(ctx).Error(err.Error())
+		log.FromContext(ctx).Error(
+			"delete source by link",
+			"error", err,
+		)
 		return err
 	}
 

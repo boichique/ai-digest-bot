@@ -1,20 +1,26 @@
 package sources
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
 	"digest_bot_database/internal/echox"
+
 	"github.com/labstack/echo/v4"
 )
 
+const youtubeVideoURL = "https://www.youtube.com/watch?v="
+
 type Handler struct {
 	service *Service
+	client  *Client
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, client *Client) *Handler {
+	return &Handler{
+		service: service,
+		client:  client,
+	}
 }
 
 func (h *Handler) CreateSource(c echo.Context) error {
@@ -46,7 +52,7 @@ func (h *Handler) GetUserSourcesByID(c echo.Context) error {
 		return err
 	}
 
-	sources, err := h.service.GetUserSourcesByUserID(c.Request().Context(), req.UserID)
+	sources, err := h.service.GetSourcesByUserID(c.Request().Context(), req.UserID)
 	if err != nil {
 		return err
 	}
@@ -60,15 +66,14 @@ func (h *Handler) GetDigestForUserSource(c echo.Context) error {
 		return err
 	}
 
-	sourcesIDs, err := h.service.GetUserSourcesByUserID(c.Request().Context(), req.UserID)
+	sourcesIDs, err := h.service.GetSourcesByUserID(c.Request().Context(), req.UserID)
 	if err != nil {
 		return err
 	}
 
 	var list []Video
-	youtubeApiToken := c.Get("YoutubeApiToken").(string)
 	for _, sourceID := range sourcesIDs {
-		videos, err := GetNewVideosForUserSource(sourceID, youtubeApiToken)
+		videos, err := h.client.GetNewVideosForUserSourceByHour(sourceID)
 		if err != nil {
 			return err
 		}
@@ -78,7 +83,7 @@ func (h *Handler) GetDigestForUserSource(c echo.Context) error {
 
 	var fullDigest string
 	for _, video := range list {
-		digest, err := GetVideoText(int64(req.UserID), fmt.Sprintf("https://www.youtube.com/watch?v=%s", video.VideoID))
+		digest, err := GetVideoText(int64(req.UserID), youtubeVideoURL+video.VideoID)
 		if err != nil {
 			return err
 		}
@@ -86,8 +91,7 @@ func (h *Handler) GetDigestForUserSource(c echo.Context) error {
 		fullDigest += digest
 	}
 
-	chatGPTApiToken := c.Get("ChatGPTApiToken").(string)
-	digest, err := GetDigestFromChatGPT(c.Request().Context(), fullDigest, chatGPTApiToken)
+	digest, err := h.client.GetSourceDigestFromChatGPT(c.Request().Context(), fullDigest)
 	if err != nil {
 		log.Print(err)
 		return err
@@ -102,15 +106,14 @@ func (h *Handler) GetNewVideosForUserSources(c echo.Context) error {
 		return err
 	}
 
-	sources, err := h.service.GetUserSourcesByUserID(c.Request().Context(), req.UserID)
+	sources, err := h.service.GetSourcesByUserID(c.Request().Context(), req.UserID)
 	if err != nil {
 		return err
 	}
 
 	var list []Video
-	youtubeApiToken := c.Get("YoutubeApiToken").(string)
 	for _, source := range sources {
-		videos, err := GetNewVideosForUserSource(source, youtubeApiToken)
+		videos, err := h.client.GetNewVideosForUserSourceByHour(source)
 		if err != nil {
 			return err
 		}
@@ -133,7 +136,6 @@ func (h *Handler) DeleteSourceByLink(c echo.Context) error {
 		Source: req.Source,
 	}
 
-	log.Print(source)
 	return h.service.DeleteSourceByLink(c.Request().Context(), source)
 }
 

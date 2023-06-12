@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -9,7 +10,6 @@ import (
 	"digest_bot/internal/config"
 	"digest_bot/internal/crontasks"
 	"digest_bot/internal/validation"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/robfig/cron"
 )
@@ -27,7 +27,7 @@ func main() {
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	cr := cron.New()
-	cr.AddFunc("0 * 18 * *", func() { crontasks.SendDigestToAllUsers(bot, cl) }) // update every hour (* 0 * * *)
+	cr.AddFunc("0 0 19 * *", func() { crontasks.SendDigestToAllUsers(context.Background(), bot, cl) }) // update every day at 21:00 msk (0 0 19 * *)
 	cr.Start()
 
 	u := tgbotapi.NewUpdate(0)
